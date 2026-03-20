@@ -17,6 +17,11 @@ concurrency:
   group: pages
   cancel-in-progress: true
 
+# Opt into Node.js 24 for all actions to avoid the Node.js 20 deprecation warnings.
+# Remove this once the action authors release Node.js 24 native versions.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build:
     name: Build static site
@@ -44,17 +49,34 @@ jobs:
       - name: Run unit tests
         run: npm test -- --passWithNoTests
 
+      - name: Resolve base path
+        id: basepath
+        run: |
+          if [ -n "${{ vars.PAGES_BASE_PATH }}" ]; then
+            # Use the manually-set variable (useful for custom domains or org repos)
+            echo "value=${{ vars.PAGES_BASE_PATH }}" >> $GITHUB_OUTPUT
+          else
+            # Auto-detect: standard GitHub Pages serves at /repo-name
+            echo "value=/${{ github.event.repository.name }}" >> $GITHUB_OUTPUT
+          fi
+
       - name: Build static export
-        # NEXT_PUBLIC_BASE_PATH must match your GitHub repository name.
-        # Set it as a repository secret or variable named PAGES_BASE_PATH in:
-        # Settings → Secrets and variables → Actions → Variables → New repository variable
-        # Example value: /drawing-board
         env:
-          NEXT_PUBLIC_BASE_PATH: ${{ vars.PAGES_BASE_PATH }}
+          NEXT_PUBLIC_BASE_PATH: ${{ steps.basepath.outputs.value }}
         run: npm run build
+
+      - name: Disable Jekyll
+        # GitHub Pages runs Jekyll by default which ignores any directory whose name
+        # starts with an underscore — including Next.js's _next/ folder. Adding a
+        # .nojekyll file at the root of the output tells Pages to serve files as-is.
+        run: touch out/.nojekyll
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
+        with:
+          # Automatically enables Pages on first run if it isn't already turned on.
+          # Without this, the action fails with "Not Found" if Pages was never activated.
+          enablement: true
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
