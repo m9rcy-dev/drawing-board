@@ -1,32 +1,90 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Tailwind v4: single import replaces @tailwind base/components/utilities */
+@import "tailwindcss";
 
-/* ─── CSS Variables ───────────────────────────────────────────────────────────── */
-/* Note: Fonts are loaded via next/font/google in layout.tsx and self-hosted      */
-/* at build time — no external @import needed.                                    */
+/* ─── Design Tokens (replaces tailwind.config.ts theme.extend) ────────────── */
+/* All custom values live here. Tailwind v4 generates utility classes from     */
+/* these CSS variables automatically: --color-X generates bg-X, text-X, etc.  */
+
+@theme {
+  /* Colors — Atelier Dark design system */
+  --color-atelier-bg:           #0B0A14;
+  --color-atelier-surface:      #15141F;
+  --color-atelier-elevated:     #1D1C2A;
+  --color-atelier-canvas:       #FAF9F6;
+  --color-atelier-accent:       #06B6D4;
+  --color-atelier-accent-dim:   rgba(6, 182, 212, 0.15);
+  --color-atelier-accent-glow:  rgba(6, 182, 212, 0.35);
+  --color-atelier-amber:        #F59E0B;
+  --color-atelier-text:         #EAE8F5;
+  --color-atelier-muted:        #6B6884;
+  --color-atelier-subtle:       #2A2838;
+
+  /* Font families */
+  --font-display: var(--font-fraunces), Georgia, serif;
+  --font-sans:    var(--font-dm-sans), system-ui, sans-serif;
+  --font-mono:    var(--font-jetbrains), monospace;
+
+  /* Shadows */
+  --shadow-glass:       0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
+  --shadow-tool-active: 0 0 0 2px rgba(6,182,212,0.6), 0 4px 16px rgba(6,182,212,0.25);
+  --shadow-canvas:      inset 0 0 80px rgba(0,0,0,0.12);
+
+  /* Animations — keyframes defined below */
+  --animate-fade-in:    fade-in 0.3s ease-out;
+  --animate-tool-pop:   tool-pop 0.2s ease-out;
+  --animate-glow-pulse: glow-pulse 2s ease-in-out infinite;
+}
+
+/* ─── Keyframes ───────────────────────────────────────────────────────────── */
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes tool-pop {
+  0%   { transform: scale(0.92); }
+  60%  { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 12px rgba(6,182,212,0.3); }
+  50%       { box-shadow: 0 0 24px rgba(6,182,212,0.6); }
+}
+
+@keyframes grain {
+  0%,  100% { transform: translate(0, 0); }
+  10%        { transform: translate(-1%, -1%); }
+  20%        { transform: translate(1%, 1%); }
+  30%        { transform: translate(-1%, 0%); }
+  40%        { transform: translate(1%, -1%); }
+  50%        { transform: translate(-0.5%, 1%); }
+  60%        { transform: translate(0.5%, -0.5%); }
+  70%        { transform: translate(-1%, 0.5%); }
+  80%        { transform: translate(1%, 0%); }
+  90%        { transform: translate(-0.5%, -1%); }
+}
+
+/* ─── CSS Variables (for non-Tailwind usage, e.g. inline canvas styles) ──── */
 
 :root {
-  --bg: #0B0A14;
-  --surface: #15141F;
-  --elevated: #1D1C2A;
-  --border: rgba(255, 255, 255, 0.07);
-  --canvas-bg: #FAF9F6;
-  --accent: #8B5CF6;
-  --accent-dim: rgba(139, 92, 246, 0.15);
-  --text: #EAE8F5;
-  --muted: #6B6884;
+  --bg:         #0B0A14;
+  --surface:    #15141F;
+  --elevated:   #1D1C2A;
+  --border:     rgba(255, 255, 255, 0.07);
+  --canvas-bg:  #FAF9F6;
+  --accent:     #06B6D4;
+  --accent-dim: rgba(6, 182, 212, 0.15);
+  --text:       #EAE8F5;
+  --muted:      #6B6884;
 }
 
-/* ─── Base Reset ──────────────────────────────────────────────────────────────── */
-
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+/* ─── Base ───────────────────────────────────────────────────────────────── */
+/* NOTE: The *, *::before, *::after { box-sizing; margin; padding } reset is  */
+/* provided by Tailwind v4's @layer base. Re-declaring it outside a layer     */
+/* would give it higher cascade priority than @layer utilities, overriding    */
+/* ALL Tailwind margin/padding utilities (p-4, mb-4, gap-*, etc.).            */
 
 html,
 body {
@@ -45,31 +103,21 @@ body {
   -webkit-user-select: none;
 }
 
-/* ─── Canvas ──────────────────────────────────────────────────────────────────── */
+/* ─── Canvas ─────────────────────────────────────────────────────────────── */
 
 canvas {
   display: block;
   touch-action: none;
 }
 
-/* ─── Scrollbar ───────────────────────────────────────────────────────────────── */
+/* ─── Scrollbar ──────────────────────────────────────────────────────────── */
 
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
+/* ─── Selection / Focus ──────────────────────────────────────────────────── */
 
-/* ─── Selection Styles ────────────────────────────────────────────────────────── */
-
-::selection {
-  background: rgba(139, 92, 246, 0.3);
-}
-
-/* ─── Focus Styles ────────────────────────────────────────────────────────────── */
+::selection { background: rgba(6, 182, 212, 0.3); }
 
 :focus-visible {
   outline: 2px solid var(--accent);
@@ -77,22 +125,8 @@ canvas {
   border-radius: 6px;
 }
 
-/* ─── Animations ──────────────────────────────────────────────────────────────── */
+/* ─── Grain overlay ──────────────────────────────────────────────────────── */
 
-@keyframes grain {
-  0%, 100% { transform: translate(0, 0); }
-  10% { transform: translate(-1%, -1%); }
-  20% { transform: translate(1%, 1%); }
-  30% { transform: translate(-1%, 0%); }
-  40% { transform: translate(1%, -1%); }
-  50% { transform: translate(-0.5%, 1%); }
-  60% { transform: translate(0.5%, -0.5%); }
-  70% { transform: translate(-1%, 0.5%); }
-  80% { transform: translate(1%, 0%); }
-  90% { transform: translate(-0.5%, -1%); }
-}
-
-/* Subtle workspace grain overlay */
 .grain-overlay::after {
   content: '';
   position: fixed;

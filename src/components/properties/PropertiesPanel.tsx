@@ -99,7 +99,7 @@ const StrokeStyleBtn = ({
       <svg width="28" height="6" viewBox="0 0 28 6">
         <line
           x1="0" y1="3" x2="28" y2="3"
-          stroke={active ? "#8B5CF6" : "#6B6884"}
+          stroke={active ? "#06B6D4" : "#6B6884"}
           strokeWidth="2" strokeLinecap="round"
           strokeDasharray={dash.join(" ")}
         />
@@ -137,7 +137,7 @@ const SloppinessBtn = ({
     <svg width="30" height="18" viewBox="0 0 30 18">
       <path
         d={option.path}
-        stroke={active ? "#8B5CF6" : "#6B6884"}
+        stroke={active ? "#06B6D4" : "#6B6884"}
         strokeWidth="2" strokeLinecap="round"
         fill="none"
       />
@@ -181,7 +181,7 @@ export const PropertiesPanel = () => {
       onPointerDown={(e) => e.stopPropagation()}
     >
       <Section label="Stroke">
-        <div className="flex gap-1.5 flex-wrap">
+        <div className="grid grid-cols-5 gap-1.5">
           {STROKE_COLORS.map(({ value, label }) => (
             <Swatch key={value} value={value} label={label} active={strokeColor === value} onClick={() => onStrokeColor(value)} />
           ))}
@@ -189,7 +189,7 @@ export const PropertiesPanel = () => {
       </Section>
 
       <Section label="Background">
-        <div className="flex gap-1.5 flex-wrap">
+        <div className="grid grid-cols-5 gap-1.5">
           {FILL_COLORS.map(({ value, label }) => (
             <Swatch key={value} value={value} label={label} active={fillColor === value} onClick={() => onFillColor(value)} />
           ))}

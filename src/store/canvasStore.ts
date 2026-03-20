@@ -24,7 +24,7 @@ const snapshot = (elements: WhiteboardElement[]): HistoryEntry => ({
 
 // ─── Store ────────────────────────────────────────────────────────────────────
 
-export const useCanvasStore = create<CanvasStore>((set, get) => ({
+export const useCanvasStore = create<CanvasStore>()((set, get) => ({
   elements: [],
   selectedIds: [],
   activeTool: "select" as ToolType,

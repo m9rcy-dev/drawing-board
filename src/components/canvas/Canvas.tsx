@@ -86,14 +86,14 @@ const TextOverlay = ({
         ...(edit.width ? { width: edit.width * zoom, maxWidth: edit.width * zoom } : {}),
         lineHeight: 1.4,
         background: "rgba(255,255,255,0.85)",
-        border: "2px solid #8B5CF6",
+        border: "2px solid #06B6D4",
         borderRadius: 4,
         padding: "2px 6px",
         outline: "none",
         resize: "none",
         overflow: "hidden",
         zIndex: 30,
-        boxShadow: "0 2px 12px rgba(139,92,246,0.2)",
+        boxShadow: "0 2px 12px rgba(6,182,212,0.2)",
       }}
     />
   );

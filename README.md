@@ -1,6 +1,6 @@
 # Drawboard — Simple Whiteboard
 
-A lightweight, production-grade collaborative whiteboard built with Next.js 14, TypeScript, and HTML5 Canvas. Draw shapes, connect them with smart arrows, write text, and export your work as PNG.
+A lightweight, production-grade collaborative whiteboard built with Next.js 16, TypeScript, and HTML5 Canvas. Draw shapes, connect them with smart arrows, write text, and export your work as PNG.
 
 ---
 
@@ -371,7 +371,7 @@ drawing-board/
 │   └── progress.md               ← Session-by-session progress log. Read before starting work.
 │
 ├── next.config.mjs               ← Next.js config (static export settings for GitHub Pages)
-├── tailwind.config.ts            ← Design tokens: colors, fonts, shadows, animations
+├── postcss.config.mjs            ← PostCSS config for Tailwind v4 (@tailwindcss/postcss)
 ├── tsconfig.json                 ← TypeScript strict mode, path alias @/* → src/*
 ├── jest.config.js                ← Jest config for ts-jest + jsdom
 └── package.json                  ← Scripts and dependencies
@@ -406,7 +406,9 @@ const nextConfig = {
 };
 ```
 
-### `tailwind.config.ts` — Design system
+### `src/app/globals.css` — Design system (Tailwind v4)
+
+In Tailwind v4 there is no `tailwind.config.ts`. All design tokens live in the `@theme {}` block inside `globals.css`.
 
 Defines the **Atelier Dark** design tokens:
 
@@ -625,11 +627,12 @@ NEXT_PUBLIC_BASE_PATH=/your-repo-name npm run build
 
 | Technology | Version | Role |
 |------------|---------|------|
-| Next.js | 14 | App framework (App Router, static export) |
-| React | 18 | UI component model |
-| TypeScript | 5 | Type safety, strict mode |
-| Zustand | 4 | State management + history |
-| Tailwind CSS | 3 | Styling and design tokens |
-| Lucide React | 0.395 | Icon set |
-| Jest | 29 | Unit testing |
-| Playwright | 1.44 | End-to-end testing |
+| Next.js | 16 | App framework (App Router, static export) |
+| React | 19 | UI component model |
+| TypeScript | 5.8 | Type safety, strict mode |
+| Zustand | 5 | State management + history |
+| Tailwind CSS | 4 | Styling and design tokens (via `@theme {}` in `globals.css`) |
+| Lucide React | 0.577 | Icon set |
+| Jest | 30 | Unit testing |
+| Playwright | 1.50 | End-to-end testing |
+| Node.js | 22 | Runtime (CI uses Node 22) |

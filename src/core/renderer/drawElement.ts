@@ -193,7 +193,7 @@ const drawLineSelection = (ctx: CanvasRenderingContext2D, el: LineElement): void
   const zoom = ctx.getTransform().a || 1;
   ctx.save();
   ctx.globalAlpha = 1;
-  ctx.strokeStyle = "#8B5CF6";
+  ctx.strokeStyle = "#06B6D4";
   ctx.lineWidth = 1.5 / zoom;
   ctx.setLineDash([5, 4]);
   ctx.strokeRect(x - pad, y - pad, w + pad * 2, h + pad * 2);
@@ -207,7 +207,7 @@ const drawSelectionBox = (ctx: CanvasRenderingContext2D, el: WhiteboardElement):
 
   ctx.save();
   ctx.globalAlpha = 1;
-  ctx.strokeStyle = "#8B5CF6";
+  ctx.strokeStyle = "#06B6D4";
   ctx.lineWidth = 1.5 / zoom;
   ctx.setLineDash([5, 4]);
   ctx.strokeRect(x, y, w, h);
@@ -218,7 +218,7 @@ const drawSelectionBox = (ctx: CanvasRenderingContext2D, el: WhiteboardElement):
     const hy = y + h * fy;
     ctx.beginPath(); ctx.arc(hx, hy, 5, 0, Math.PI * 2);
     ctx.fillStyle = "#ffffff"; ctx.fill();
-    ctx.strokeStyle = "#8B5CF6"; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.strokeStyle = "#06B6D4"; ctx.lineWidth = 1.5; ctx.stroke();
   }
   ctx.restore();
 };
@@ -232,11 +232,11 @@ const drawArrowHandles = (ctx: CanvasRenderingContext2D, el: ArrowElement): void
   for (const [hx, hy] of [[el.x, el.y], [el.x2, el.y2]] as [number, number][]) {
     ctx.beginPath(); ctx.arc(hx, hy, ARROW_ENDPOINT_HANDLE_RADIUS, 0, Math.PI * 2);
     ctx.fillStyle = "#ffffff"; ctx.fill();
-    ctx.strokeStyle = "#8B5CF6"; ctx.lineWidth = 2; ctx.stroke();
+    ctx.strokeStyle = "#06B6D4"; ctx.lineWidth = 2; ctx.stroke();
   }
 
   ctx.beginPath(); ctx.arc(mid.x, mid.y, ARROW_BEND_HANDLE_RADIUS, 0, Math.PI * 2);
-  ctx.fillStyle = "#8B5CF6"; ctx.fill();
+  ctx.fillStyle = "#06B6D4"; ctx.fill();
   ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1.5; ctx.stroke();
 
   ctx.restore();

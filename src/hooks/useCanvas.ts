@@ -1,8 +1,8 @@
 "use client";
 
-import {
+import React, {
   useState, useRef, useCallback, useEffect,
-  type RefObject, type PointerEvent,
+  type RefObject,
 } from "react";
 import type {
   WhiteboardElement, Point, FreehandElement, ArrowElement,
@@ -11,7 +11,7 @@ import type {
 import { useCanvasStore } from "@/store/canvasStore";
 import { createElement } from "@/core/elements/createElement";
 import { findHitElement } from "@/core/collision/hitTest";
-import { findArrowHandle, getArrowMidPoint } from "@/core/collision/arrowHandles";
+import { findArrowHandle } from "@/core/collision/arrowHandles";
 import {
   findResizeHandle, applyResize, applyFreehandResize,
   RESIZE_CURSORS, type ResizeHandle,
@@ -55,8 +55,8 @@ export interface UseCanvasReturn {
   commitText: (text: string) => void;
   cancelText: () => void;
   handlers: {
-    onPointerDown: (e: PointerEvent<HTMLCanvasElement>) => void;
-    onPointerMove: (e: PointerEvent<HTMLCanvasElement>) => void;
+    onPointerDown: (e: React.PointerEvent<HTMLCanvasElement>) => void;
+    onPointerMove: (e: React.PointerEvent<HTMLCanvasElement>) => void;
     onPointerUp: () => void;
     onPointerLeave: () => void;
     onWheel: (e: React.WheelEvent<HTMLCanvasElement>) => void;
@@ -74,7 +74,7 @@ export const clientToWorld = (
   return { x: (clientX - r.left - pan.x) / zoom, y: (clientY - r.top - pan.y) / zoom };
 };
 
-const toWorld = (e: PointerEvent<HTMLCanvasElement>, canvas: HTMLCanvasElement, zoom: number, pan: Point): Point =>
+const toWorld = (e: React.PointerEvent<HTMLCanvasElement>, canvas: HTMLCanvasElement, zoom: number, pan: Point): Point =>
   clientToWorld(e.clientX, e.clientY, canvas, zoom, pan);
 
 // ─── Geometry Helpers ─────────────────────────────────────────────────────────
@@ -263,7 +263,7 @@ const getHoverCursor = (
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
-export const useCanvas = (canvasRef: RefObject<HTMLCanvasElement>): UseCanvasReturn => {
+export const useCanvas = (canvasRef: RefObject<HTMLCanvasElement | null>): UseCanvasReturn => {
   const [mode, setMode] = useState<Mode>({ type: "idle" });
   const [textEdit, setTextEdit] = useState<TextEditState | null>(null);
   const spaceDown = useRef(false);
@@ -347,7 +347,7 @@ export const useCanvas = (canvasRef: RefObject<HTMLCanvasElement>): UseCanvasRet
 
   // ── Pointer Down ─────────────────────────────────────────────────────────
 
-  const handlePointerDown = useCallback((e: PointerEvent<HTMLCanvasElement>) => {
+  const handlePointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!canvasRef.current) return;
     e.currentTarget.setPointerCapture(e.pointerId);
     if (textEdit) return;
@@ -436,7 +436,7 @@ export const useCanvas = (canvasRef: RefObject<HTMLCanvasElement>): UseCanvasRet
 
   // ── Pointer Move ─────────────────────────────────────────────────────────
 
-  const handlePointerMove = useCallback((e: PointerEvent<HTMLCanvasElement>) => {
+  const handlePointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!canvasRef.current) return;
 
     // Idle: update hover cursor for resize handles (no state update → direct DOM)

@@ -59,10 +59,20 @@ const ExportMenu = ({ elements }: { elements: WhiteboardElement[] }) => {
   };
 
   return (
-    <div ref={menuRef} className="relative hidden sm:block">
+    <div ref={menuRef} className="relative">
+      {/* Mobile: icon only */}
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-1.5 h-8 px-3 rounded-lg bg-atelier-accent/10 border border-atelier-accent/20 text-atelier-accent text-xs font-sans hover:bg-atelier-accent/20 hover:border-atelier-accent/40 transition-all duration-200"
+        className="sm:hidden flex items-center justify-center w-8 h-8 rounded-lg bg-atelier-accent/10 border border-atelier-accent/20 text-atelier-accent hover:bg-atelier-accent/20 transition-all duration-200"
+        aria-label="Export options"
+      >
+        <Download size={14} />
+      </button>
+
+      {/* Desktop: full label button */}
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="hidden sm:flex items-center gap-1.5 h-8 px-3 rounded-lg bg-atelier-accent/10 border border-atelier-accent/20 text-atelier-accent text-xs font-sans hover:bg-atelier-accent/20 hover:border-atelier-accent/40 transition-all duration-200"
         aria-label="Export options"
       >
         <Download size={13} />
@@ -111,7 +121,7 @@ export const Header = () => {
       <div className="flex items-center gap-2.5">
         <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-atelier-accent/20 border border-atelier-accent/30">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M2 10L5 4L8 8L10 5.5L12 9" stroke="#8B5CF6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M2 10L5 4L8 8L10 5.5L12 9" stroke="#06B6D4" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
         <span className="font-display text-atelier-text text-[15px] tracking-tight">

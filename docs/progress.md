@@ -6,7 +6,7 @@ _Single source of truth for resuming work. Read this before starting any session
 
 ## Current Status: Phase 2 — Drawing Tools (Refinement) 🔄
 
-**Last updated**: 2026-03-20
+**Last updated**: 2026-03-21
 
 ---
 
@@ -247,6 +247,30 @@ Fonts: **Fraunces** (display) · **DM Sans** (UI) · **JetBrains Mono** (code/nu
 1. Repo Settings → Pages → Source → GitHub Actions
 2. Add repository variable `PAGES_BASE_PATH = /your-repo-name` (Settings → Secrets → Variables)
 3. Push to `main` — the Actions workflow handles the rest
+
+## Dependency Upgrade (2026-03-21) — Full Stack to Latest
+
+- **Next.js 14 → 16**, **React 18 → 19**, **Tailwind CSS 3 → 4**, **Zustand 4 → 5**, **ESLint 8 → 9**, **Jest 29 → 30**, **Node CI 20 → 22**
+- Tailwind v4: `tailwind.config.ts` deleted; all design tokens moved to `@theme {}` in `globals.css`; `@tailwindcss/postcss` replaces `tailwindcss` + `autoprefixer` in `postcss.config.mjs`
+- React 19: `RefObject<T>` → `RefObject<T | null>` in `useCanvas.ts`; generic event types now require `React.` prefix
+- Zustand 5: `create<T>()(...)` curried form required for TypeScript
+- ESLint 9 flat config: `eslint.config.mjs` with native `eslint-config-next` array exports; `lint` script changed to `eslint src/`
+- GitHub Actions: `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true` env; `node-version: 22`
+
+## Bug Fix (2026-03-21) — Full UI Layout Regression (Root Cause Found)
+
+### Root cause
+In Tailwind v4, all utility classes live in `@layer utilities`. CSS Cascade Layers give **unlayered styles higher priority than any `@layer`** regardless of specificity. The `*,*::before,*::after { margin: 0; padding: 0 }` reset in `globals.css` was NOT in any layer → it silently overrode every Tailwind margin/padding utility across the entire app.
+
+- `p-4` (panel padding), `mb-4` (section spacing), `px-*`, `py-*`, `gap-*` for flex/grid → all overridden to 0
+- This broke PropertiesPanel layout, Export dropdown spacing, tooltip padding, and all button padding
+- The bug was invisible in v3 because Tailwind v3 did NOT use CSS layers; class specificity (0,1,0) correctly beat the universal selector (0,0,0)
+
+### Fix
+Removed the duplicate `*, *::before, *::after { box-sizing; margin; padding }` block from `globals.css`. Tailwind v4's `@layer base` already provides this exact reset, and being in a layer, it is correctly overridden by `@layer utilities` classes.
+
+### Also fixed
+- Swatch containers changed from `flex gap-1.5 flex-wrap` to `grid grid-cols-5 gap-1.5` for explicit 5-per-row layout
 
 ## Next Task: Phase 2.1 — Freehand Smoothing
 - Implement Catmull-Rom spline smoothing in `drawElement.ts` for freehand paths
