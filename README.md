@@ -1,6 +1,6 @@
 # Drawboard — Simple Whiteboard
 
-A lightweight, production-grade collaborative whiteboard built with Next.js 16, TypeScript, and HTML5 Canvas. Draw shapes, connect them with smart arrows, write text, and export your work as PNG.
+A lightweight, production-grade whiteboard built with Next.js 16, TypeScript, and HTML5 Canvas. Draw shapes, connect them with smart arrows, write text, and export your work as PNG.
 
 ---
 
@@ -11,11 +11,13 @@ A lightweight, production-grade collaborative whiteboard built with Next.js 16, 
 3. [How Shapes Are Structured](#how-shapes-are-structured)
 4. [How Arrows Link Shapes](#how-arrows-link-shapes)
 5. [File & Folder Structure](#file--folder-structure)
-6. [Configuration Files Explained](#configuration-files-explained)
-7. [Keyboard Shortcuts](#keyboard-shortcuts)
-8. [Extending the App](#extending-the-app)
-9. [Deploying to GitHub Pages](#deploying-to-github-pages)
-10. [Production Readiness Notes](#production-readiness-notes)
+6. [Design System — Atelier](#design-system--atelier)
+7. [Configuration Files Explained](#configuration-files-explained)
+8. [Keyboard Shortcuts](#keyboard-shortcuts)
+9. [Extending the App](#extending-the-app)
+10. [Deploying to GitHub Pages](#deploying-to-github-pages)
+11. [Production Readiness Notes](#production-readiness-notes)
+12. [Recent Changes](#recent-changes)
 
 ---
 
@@ -134,6 +136,7 @@ interface BaseElement {
   opacity: number;         // 0–1
   isSelected: boolean;     // true when user has selected this element
   createdAt: number;       // Date.now() timestamp
+  label?: string;          // optional inline text label (set by double-clicking a shape)
 }
 ```
 
@@ -178,6 +181,13 @@ interface TextElement extends BaseElement {
   // width is used for text wrapping (inherited from BaseElement)
 }
 ```
+
+### Shape labels
+
+Any shape (except freehand and text) can have an optional text label set by double-clicking it in select mode. Labels are stored in `BaseElement.label?: string` and rendered by `drawShapeLabel()` in `drawElement.ts`:
+
+- **Rectangles, diamonds, ellipses**: label is drawn centered inside the shape
+- **Arrows and lines**: label is drawn at the midpoint, with a small white background pill for readability
 
 ### Creating an element
 
@@ -294,7 +304,7 @@ const { elements: freshEls, selectedIds: freshIds } = useCanvasStore.getState();
 
 ### Arrow bending (midpoint)
 
-Users can drag the purple midpoint handle to create a curved arrow:
+Users can drag the cyan midpoint handle to create a curved arrow:
 
 ```
 ArrowElement.midPoint = { x: 450, y: 200 }  // bend control point
@@ -333,7 +343,7 @@ drawing-board/
 │   │   │
 │   │   ├── renderer/
 │   │   │   ├── Renderer.ts       ← Orchestrates a full frame: background + grid + all elements
-│   │   │   ├── drawElement.ts    ← Draws a single element to ctx (switch on element.type)
+│   │   │   ├── drawElement.ts    ← Draws a single element to ctx; also renders shape labels
 │   │   │   └── sloppiness.ts     ← Seeded RNG + sloppy bezier drawing utilities
 │   │   │
 │   │   └── collision/
@@ -342,36 +352,42 @@ drawing-board/
 │   │       └── resizeHandles.ts  ← 8-handle resize: positions, cursors, resize math
 │   │
 │   ├── hooks/
-│   │   ├── useCanvas.ts          ← THE brain: all pointer interaction logic (draw, move, resize, pan...)
-│   │   ├── useKeyboardShortcuts.ts ← Keyboard bindings (tool keys, undo/redo, delete, select-all)
-│   │   └── useWindowSize.ts      ← Debounced window resize hook
+│   │   ├── useCanvas.ts             ← THE brain: all pointer interaction + native wheel zoom
+│   │   ├── useTheme.ts              ← Light/dark mode via useSyncExternalStore + localStorage
+│   │   ├── usePreventBrowserZoom.ts ← Blocks Ctrl+scroll browser zoom via non-passive wheel listener
+│   │   ├── useKeyboardShortcuts.ts  ← Keyboard bindings (tool keys, undo/redo, delete, select-all)
+│   │   └── useWindowSize.ts         ← Debounced window resize hook
 │   │
 │   ├── components/
 │   │   ├── canvas/
-│   │   │   ├── Canvas.tsx        ← <canvas> element + ResizeObserver + RAF loop + text textarea overlay
-│   │   │   └── index.ts          ← Re-export
+│   │   │   └── Canvas.tsx        ← <canvas> element + ResizeObserver + RAF loop + text overlay
+│   │   │
+│   │   ├── common/
+│   │   │   └── Logo.tsx          ← Inline SVG logo component (theme-independent)
 │   │   │
 │   │   ├── header/
-│   │   │   └── Header.tsx        ← Top bar: logo, zoom controls, export dropdown
+│   │   │   └── Header.tsx        ← Top bar: logo, zoom controls, theme toggle, export dropdown
 │   │   │
 │   │   ├── toolbar/
-│   │   │   ├── ToolButton.tsx    ← A single tool button (hover tooltip, active state, animation)
-│   │   │   ├── ToolbarButtons.tsx ← Renders all tool buttons in vertical or horizontal orientation
-│   │   │   └── index.ts          ← Re-export
+│   │   │   ├── ToolButton.tsx       ← Single tool button with tooltip and active glow
+│   │   │   ├── ToolbarButtons.tsx   ← All tool buttons in vertical or horizontal orientation
+│   │   │   ├── WebToolbar.tsx       ← Collapsible floating sidebar (desktop only)
+│   │   │   └── MobileToolbar.tsx    ← Bottom sheet toolbar with combo pickers + undo/redo (mobile)
 │   │   │
 │   │   └── properties/
-│   │       └── PropertiesPanel.tsx ← Floating panel: stroke/fill/width/style/sloppiness controls
+│   │       ├── PropertiesPanel.tsx       ← Floating panel near selected element (desktop)
+│   │       └── MobilePropertiesPanel.tsx ← Compact overlay bar above mobile toolbar
 │   │
-│   └── app/                      ← Next.js App Router
-│       ├── layout.tsx            ← Root layout: fonts, metadata, <html> + <body>
-│       ├── page.tsx              ← Main page: header + toolbar + canvas + properties panel
-│       └── globals.css           ← CSS variables, reset, Tailwind base, grain overlay
+│   └── app/
+│       ├── layout.tsx            ← Root layout: fonts, metadata, viewport, anti-FOUC theme script
+│       ├── page.tsx              ← Main page: header + canvas + toolbars
+│       └── globals.css           ← CSS variables, Tailwind v4 @theme {}, light/dark overrides
 │
 ├── docs/
 │   └── progress.md               ← Session-by-session progress log. Read before starting work.
 │
-├── next.config.mjs               ← Next.js config (static export settings for GitHub Pages)
-├── postcss.config.mjs            ← PostCSS config for Tailwind v4 (@tailwindcss/postcss)
+├── next.config.mjs               ← Next.js config (static export for GitHub Pages)
+├── postcss.config.mjs            ← PostCSS config for Tailwind v4
 ├── tsconfig.json                 ← TypeScript strict mode, path alias @/* → src/*
 ├── jest.config.js                ← Jest config for ts-jest + jsdom
 └── package.json                  ← Scripts and dependencies
@@ -383,13 +399,63 @@ drawing-board/
 |---|---|
 | Add a new element type | `src/types/index.ts` → `src/core/elements/createElement.ts` → `src/core/renderer/drawElement.ts` |
 | Change how an element is drawn | `src/core/renderer/drawElement.ts` |
-| Add a new tool | `src/types/index.ts` (ToolType) → `src/hooks/useKeyboardShortcuts.ts` → `src/components/toolbar/ToolbarButtons.tsx` → `src/hooks/useCanvas.ts` |
+| Add a new tool | `src/types/index.ts` (ToolType) → `src/hooks/useKeyboardShortcuts.ts` → toolbar components → `src/hooks/useCanvas.ts` |
 | Change a color or size constant | `src/utils/constants.ts` |
 | Change the store (new action, new state) | `src/store/types.ts` → `src/store/canvasStore.ts` |
-| Change how pointer/mouse interaction works | `src/hooks/useCanvas.ts` |
-| Change the toolbar layout | `src/components/toolbar/ToolbarButtons.tsx` |
-| Change the properties panel | `src/components/properties/PropertiesPanel.tsx` |
+| Change pointer/mouse interaction | `src/hooks/useCanvas.ts` |
+| Change the theme system | `src/app/globals.css` (`@theme {}` + `html[data-theme="light"]`) |
+| Change the mobile toolbar | `src/components/toolbar/MobileToolbar.tsx` |
+| Change the properties panel | `src/components/properties/PropertiesPanel.tsx` (desktop) or `MobilePropertiesPanel.tsx` (mobile) |
 | Add a keyboard shortcut | `src/hooks/useKeyboardShortcuts.ts` |
+
+---
+
+## Design System — Atelier
+
+The app uses a two-mode design system called **Atelier** defined entirely in `src/app/globals.css`. There is no `tailwind.config.ts` — all tokens live in the `@theme {}` block and Tailwind v4 generates utility classes from them automatically (`bg-atelier-bg`, `text-atelier-text`, etc.).
+
+### Dark mode (default)
+
+| Token | Value | Used for |
+|-------|-------|----------|
+| `atelier-bg` | `#1B1B1B` | Page / workspace background |
+| `atelier-surface` | `#252525` | Toolbar, header, panels |
+| `atelier-elevated` | `#303030` | Dropdown menus, popups |
+| `atelier-canvas` | `#F0EFEB` | Drawing canvas (warm cream) |
+| `atelier-accent` | `#90E0EF` | Active tool, selection handles, highlights |
+| `atelier-text` | `#F0EFEB` | Primary text |
+| `atelier-muted` | `#909099` | Labels, secondary text |
+| `atelier-border` | `rgba(255,255,255,0.10)` | Borders and dividers |
+| `atelier-overlay` | `rgba(255,255,255,0.05)` | Hover backgrounds |
+
+### Light mode
+
+Activated via `html[data-theme="light"]` on the `<html>` element. Overrides only the variables that differ:
+
+| Token | Value |
+|-------|-------|
+| `atelier-bg` | `#F0EFEB` |
+| `atelier-surface` | `#FFFFFF` |
+| `atelier-accent` | `#0891B2` |
+| `atelier-text` | `#1B1B1B` |
+| `atelier-muted` | `#6B7280` |
+| `atelier-border` | `rgba(0,0,0,0.10)` |
+
+### Theme switching implementation
+
+The theme hook (`src/hooks/useTheme.ts`) uses React's `useSyncExternalStore`:
+
+```typescript
+// Server and first client render always return "dark" (via getServerSnapshot)
+// → no hydration mismatch, even if localStorage holds "light"
+// After hydration, React automatically switches to getSnapshot() (actual stored value)
+
+const theme = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+```
+
+The `<html>` element has `suppressHydrationWarning` because the anti-FOUC inline script (in `<head>`) mutates `data-theme` before React hydrates — React would otherwise log a mismatch for that attribute.
+
+Fonts: **Fraunces** (display/logo) · **DM Sans** (UI) · **JetBrains Mono** (numbers/mono)
 
 ---
 
@@ -406,22 +472,24 @@ const nextConfig = {
 };
 ```
 
+### `src/app/layout.tsx` — Root layout
+
+Exports two named constants that Next.js picks up automatically:
+
+- **`metadata`** — sets `<title>` and `<meta name="description">`
+- **`viewport`** — sets `<meta name="viewport">` with `maximum-scale=1, user-scalable=no` to prevent the browser from pinch-zooming the page (canvas zoom is handled in JS instead)
+
+Also includes an inline `<script>` in `<head>` that reads `localStorage` and sets `data-theme` synchronously before React hydrates — preventing a flash of the wrong theme (FOUC).
+
 ### `src/app/globals.css` — Design system (Tailwind v4)
 
-In Tailwind v4 there is no `tailwind.config.ts`. All design tokens live in the `@theme {}` block inside `globals.css`.
+In Tailwind v4 there is no `tailwind.config.ts`. All design tokens live in the `@theme {}` block inside `globals.css`. The file is structured as:
 
-Defines the **Atelier Dark** design tokens:
-
-| Token | Value | Used for |
-|-------|-------|----------|
-| `atelier-bg` | `#0B0A14` | Page background |
-| `atelier-surface` | `#15141F` | Toolbar, header, panels |
-| `atelier-canvas` | `#FAF9F6` | Drawing canvas (warm cream) |
-| `atelier-accent` | `#8B5CF6` | Active tool, selection, handles |
-| `atelier-text` | `#EAE8F5` | Primary text |
-| `atelier-muted` | `#6B6884` | Labels, secondary text |
-
-Fonts: **Fraunces** (display/logo) · **DM Sans** (UI) · **JetBrains Mono** (numbers/mono)
+1. `@import "tailwindcss"` — single import replaces the old three-directive setup
+2. `@theme {}` — dark-mode design tokens (auto-generates all `bg-*`, `text-*`, etc. utilities)
+3. Keyframe definitions (`fade-in`, `tool-pop`, `glow-pulse`, `grain`)
+4. `html[data-theme="light"] {}` — light-mode overrides (unlayered CSS wins over `@layer`)
+5. Base styles (`html`, `body`, `canvas`, scrollbar, focus ring, grain overlay)
 
 ### `tsconfig.json` — TypeScript
 
@@ -461,8 +529,11 @@ Key settings:
 | `Delete` / `Backspace` | Delete selected elements |
 | `Escape` | Deselect all |
 | `Space + drag` | Temporary pan (works in any tool mode) |
-| `Scroll wheel` | Zoom in / out (anchored to cursor) |
+| `Scroll wheel` | Zoom in / out (anchored to cursor position) |
+| `Ctrl + Scroll` | Zoom (browser zoom is blocked; this always zooms the canvas) |
 | `Middle button + drag` | Pan |
+| `Double-click shape` | Edit inline label (rect / diamond / ellipse / arrow / line) |
+| `Double-click text` | Re-edit text content |
 
 ---
 
@@ -510,16 +581,11 @@ case "triangle": drawTriangle(ctx, el); break;
 
 **4. Add hit testing** (`src/core/collision/hitTest.ts`):
 ```typescript
-// In hitTest() switch:
 case "triangle":
   return isPointInRect(p, el.x, el.y, el.width, el.height, RECT_HIT_PADDING);
-  // For more accurate hit testing, implement point-in-triangle math
 ```
 
-**5. Add to toolbar** (`src/components/toolbar/ToolbarButtons.tsx`):
-```typescript
-{ tool: "triangle", icon: Triangle, label: "Triangle", shortcut: "9" }
-```
+**5. Add to toolbar** — add an entry to `WebToolbar` / `MobileToolbar` and `ToolbarButtons.tsx`.
 
 **6. Add keyboard shortcut** (`src/hooks/useKeyboardShortcuts.ts`):
 ```typescript
@@ -529,20 +595,13 @@ const TOOL_KEYS: Record<string, ToolType> = {
 };
 ```
 
-**7. Add ToolType** (`src/types/index.ts`):
-```typescript
-export type ToolType = ... | "triangle";
-```
+That's it. The store, history, selection, export, and label system all work automatically because they operate on `WhiteboardElement[]` generically.
 
-That's it. The store, history, selection, and export all work automatically because they operate on `WhiteboardElement[]` generically.
+### Adding a new property (e.g., opacity slider)
 
-### Adding a new property (e.g., corner rounding for all shapes)
-
-1. Add `cornerRadius?: number` to `BaseElement` in `src/types/index.ts`
-2. Set a default in `src/utils/constants.ts`
-3. Apply it in each relevant `drawXxx()` function in `drawElement.ts`
-4. Add a UI control to `PropertiesPanel.tsx`
-5. Add `activeCornerRadius` state + `setActiveCornerRadius` action to the store
+1. Add `activeOpacity` state + `setActiveOpacity` action to the store (pattern already exists)
+2. Add a UI control to `PropertiesPanel.tsx` and `MobilePropertiesPanel.tsx`
+3. Pass the value through `createElement()` and the relevant `drawXxx()` function
 
 ### Adding persistence (save/load)
 
@@ -606,9 +665,12 @@ NEXT_PUBLIC_BASE_PATH=/your-repo-name npm run build
 - **Performance**: `requestAnimationFrame` render loop, DPR-aware canvas scaling, no unnecessary re-renders
 - **Touch support**: Pointer events work on mobile and tablet; 44px minimum touch targets
 - **History**: Undo/redo with up to 100 steps, deep-cloned snapshots
-- **Stale-closure safety**: `useCanvasStore.getState()` inside event handlers avoids drift
+- **Stale-closure safety**: `useCanvasStore.getState()` inside event handlers avoids drift between pointer events
 - **Deterministic rendering**: Seeded RNG for sloppiness — elements look the same on every frame
-- **Export**: PNG export and clipboard copy work correctly with proper DPR scaling
+- **Export**: PNG export and clipboard copy use `toDataURL()` for maximum iOS/Safari compatibility
+- **Zoom isolation**: Browser pinch-zoom and Ctrl+scroll are blocked at two levels (viewport meta + non-passive wheel listener) so the UI chrome is never accidentally scaled
+- **Hydration safety**: `useSyncExternalStore` with `getServerSnapshot` ensures SSR and client agree on initial theme; `suppressHydrationWarning` on `<html>` handles the anti-FOUC attribute mutation
+- **Theme flash prevention**: Inline `<script>` in `<head>` sets `data-theme` synchronously before React hydrates, with matching CSS variables for instant visual response
 
 ### Known gaps to address before v1.0
 
@@ -620,6 +682,68 @@ NEXT_PUBLIC_BASE_PATH=/your-repo-name npm run build
 | No 404 page | Add `src/app/not-found.tsx` | Low |
 | Canvas state is global — can't have two boards | Scoped store per board | High |
 | No collaboration | Would require a WebSocket layer + CRDT | Very high |
+
+---
+
+## Recent Changes
+
+### UI Redesign — Atelier Light/Dark Theme
+
+- **New color palette**: Eerie Black (`#1B1B1B`) dark / White Picket Fence (`#F0EFEB`) light / Soft Cyan (`#90E0EF`) accent — replaces the old violet scheme
+- **Light/Dark mode toggle**: Sun/Moon button in the header. Persists to `localStorage`. Anti-FOUC script prevents flash of wrong theme on load.
+- **Header height**: 57px (matches mobile toolbar height for visual consistency)
+
+### Desktop Toolbar (WebToolbar)
+
+- Collapsible floating sidebar on the left — click the panel-close icon to hide, panel-open to restore
+- Lives in `src/components/toolbar/WebToolbar.tsx`
+
+### Mobile Toolbar (MobileToolbar)
+
+- Excalidraw-style bottom sheet replacing the old fixed sidebar
+- **Combo pickers**: shapes (rect / diamond / ellipse) and strokes (freehand / line) share one button each; tapping opens a sub-menu above the bar
+- **Undo / Redo** integrated into the right side of the nav bar (no longer floating — avoids overlap with the properties bar)
+- Properties panel is rendered inside `MobileToolbar` as an `absolute bottom-full` overlay — it floats above the nav without affecting document flow or canvas height
+
+### Mobile Properties Panel (MobilePropertiesPanel)
+
+- Compact floating bar that appears above the mobile toolbar when elements are selected
+- Four property buttons: Stroke color / Fill color / Stroke width / Stroke style
+- Tapping each opens a popup panel above with full options; picking a value commits and closes
+
+### Desktop Properties Panel — Follows Selected Element
+
+- No longer fixed at `top-3 left-[72px]`
+- `computePosition()` converts the selected element's world-space bounds to screen coordinates and places the panel to the right of the element (falls back to left, then near toolbar if no room)
+
+### Shape Labels
+
+- Double-click any non-text, non-freehand shape in select mode to add an inline label
+- Labels on rectangles/diamonds/ellipses render centered inside the shape
+- Labels on arrows/lines render at the midpoint with a white background pill for readability
+- Double-click again to edit; clearing the label removes it without deleting the shape
+- Stored in `BaseElement.label?: string`
+
+### Auto-Switch to Select After Drawing
+
+- After placing any shape, the active tool automatically switches back to `select` — consistent with Excalidraw's workflow
+
+### Zoom Isolation
+
+- **Browser pinch-zoom blocked** via `viewport` export in `layout.tsx` (`maximum-scale=1, user-scalable=no`)
+- **Ctrl+scroll blocked** via `usePreventBrowserZoom` hook (non-passive `document.wheel` listener)
+- **Canvas wheel handler moved to native listener** (`canvas.addEventListener("wheel", h, { passive: false })`): React attaches `onWheel` as passive since React 17, making `e.preventDefault()` a silent no-op. Moving to a native listener fixes the "Unable to preventDefault inside passive event listener" console error.
+
+### Bug Fixes
+
+| Bug | Root cause | Fix |
+|-----|-----------|-----|
+| React hydration mismatch on theme | Anti-FOUC script adds `data-theme` to `<html>` before React hydrates; React's VDOM had no record of this attribute | `suppressHydrationWarning` on `<html>` in `layout.tsx` |
+| `useTheme` causing hydration mismatch | `useState` lazy initializer read `localStorage` on client but not server → different initial HTML | Replaced with `useSyncExternalStore` + `getServerSnapshot = () => "dark"` |
+| Canvas showed page background on load | `<canvas>` element has no CSS background; `Renderer.render()` fires via RAF which hasn't run yet | Added `style={{ background: 'var(--canvas-bg)' }}` to the canvas wrapper div |
+| Mobile canvas shrank when shape selected | `MobilePropertiesPanel` was in the normal flex document flow — growing when a popup opened compressed the canvas | Moved inside `MobileToolbar` as `absolute bottom-full` overlay; doesn't affect layout |
+| Undo/redo overlapped properties bar on mobile | Both were at the same absolute offset from the toolbar wrapper | Integrated undo/redo into the nav bar as a permanent right-side group |
+| "Unable to preventDefault inside passive event listener" on pinch-zoom | React attaches `onWheel` as passive since React 17 | Replaced with native `addEventListener("wheel", h, { passive: false })` in `useEffect` |
 
 ---
 

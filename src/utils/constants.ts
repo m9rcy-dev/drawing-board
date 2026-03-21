@@ -28,7 +28,6 @@ export const STROKE_COLORS = [
   { label: "Dark", value: "#495057" },
   { label: "Red", value: "#c92a2a" },
   { label: "Green", value: "#2b8a3e" },
-  { label: "Blue", value: "#1864ab" },
   { label: "Orange", value: "#e67700" },
 ] as const;
 
@@ -38,7 +37,6 @@ export const FILL_COLORS = [
   { label: "Light green", value: "#b2f2bb" },
   { label: "Light blue", value: "#a5d8ff" },
   { label: "Light yellow", value: "#ffec99" },
-  { label: "White", value: "#ffffff" },
 ] as const;
 
 export const STROKE_WIDTHS = [

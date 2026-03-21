@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { useCanvasStore } from "@/store/canvasStore";
 import {
   STROKE_COLORS, FILL_COLORS, STROKE_WIDTHS, STROKE_DASH,
@@ -84,6 +85,52 @@ const Swatch = ({
           : value,
       }}
     />
+  );
+};
+
+// ─── Color Picker Swatch ──────────────────────────────────────────────────────
+
+const ColorPickerSwatch = ({
+  currentColor,
+  presets,
+  onChange,
+}: {
+  currentColor: string;
+  presets: readonly { readonly value: string }[];
+  onChange: (c: string) => void;
+}) => {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const isCustom = currentColor !== "transparent" && !presets.some((p) => p.value === currentColor);
+
+  return (
+    <label
+      title="Custom color"
+      aria-label="Custom color picker"
+      className={`
+        relative w-7 h-7 rounded-lg cursor-pointer transition-all duration-150
+        border border-white/20 overflow-hidden block
+        ${isCustom
+          ? "ring-2 ring-atelier-accent ring-offset-1 ring-offset-atelier-surface scale-105"
+          : "hover:scale-105"
+        }
+      `}
+    >
+      <input
+        ref={inputRef}
+        type="color"
+        value={isCustom ? currentColor : "#000000"}
+        onChange={(e) => onChange(e.target.value)}
+        className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+      />
+      <div
+        className="absolute inset-0"
+        style={{
+          background: isCustom
+            ? currentColor
+            : "conic-gradient(red, yellow, lime, cyan, blue, magenta, red)",
+        }}
+      />
+    </label>
   );
 };
 
@@ -231,18 +278,20 @@ export const PropertiesPanel = () => {
       onPointerDown={(e) => e.stopPropagation()}
     >
       <Section label="Stroke">
-        <div className="grid grid-cols-5 gap-1.5">
+        <div className="grid grid-cols-6 gap-1.5">
           {STROKE_COLORS.map(({ value, label }) => (
             <Swatch key={value} value={value} label={label} active={strokeColor === value} onClick={() => onStrokeColor(value)} />
           ))}
+          <ColorPickerSwatch currentColor={strokeColor} presets={STROKE_COLORS} onChange={onStrokeColor} />
         </div>
       </Section>
 
       <Section label="Background">
-        <div className="grid grid-cols-5 gap-1.5">
+        <div className="grid grid-cols-6 gap-1.5">
           {FILL_COLORS.map(({ value, label }) => (
             <Swatch key={value} value={value} label={label} active={fillColor === value} onClick={() => onFillColor(value)} />
           ))}
+          <ColorPickerSwatch currentColor={fillColor} presets={FILL_COLORS} onChange={onFillColor} />
         </div>
       </Section>
 

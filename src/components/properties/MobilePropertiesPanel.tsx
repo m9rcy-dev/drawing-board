@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useCanvasStore } from "@/store/canvasStore";
 import { STROKE_COLORS, FILL_COLORS, STROKE_WIDTHS, STROKE_DASH } from "@/utils/constants";
 import type { StrokeStyle } from "@/types";
@@ -9,9 +9,46 @@ type ActivePanel = "stroke" | "fill" | "width" | "style" | null;
 
 // ─── Popup Panels ─────────────────────────────────────────────────────────────
 
+const MobileColorPicker = ({
+  currentColor,
+  presets,
+  onChange,
+}: {
+  currentColor: string;
+  presets: readonly { readonly value: string }[];
+  onChange: (c: string) => void;
+}) => {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const isCustom = currentColor !== "transparent" && !presets.some((p) => p.value === currentColor);
+  return (
+    <label
+      title="Custom color"
+      className={`w-8 h-8 rounded-xl border-2 overflow-hidden block cursor-pointer transition-all ${
+        isCustom ? "scale-110 border-atelier-accent" : "border-white/20 hover:scale-105"
+      }`}
+    >
+      <input
+        ref={inputRef}
+        type="color"
+        value={isCustom ? currentColor : "#000000"}
+        onChange={(e) => onChange(e.target.value)}
+        className="absolute opacity-0 w-0 h-0"
+      />
+      <div
+        className="w-full h-full"
+        style={{
+          background: isCustom
+            ? currentColor
+            : "conic-gradient(red, yellow, lime, cyan, blue, magenta, red)",
+        }}
+      />
+    </label>
+  );
+};
+
 const StrokePanel = ({
-  active, onPick,
-}: { active: string; onPick: (v: string) => void }) => (
+  active, onPick, onPickCustom,
+}: { active: string; onPick: (v: string) => void; onPickCustom: (v: string) => void }) => (
   <div className="flex gap-2 justify-center bg-atelier-surface border border-atelier-border rounded-2xl px-3 py-3 shadow-glass animate-fade-in">
     {STROKE_COLORS.map(({ value, label }) => (
       <button
@@ -24,12 +61,13 @@ const StrokePanel = ({
         style={{ background: value }}
       />
     ))}
+    <MobileColorPicker currentColor={active} presets={STROKE_COLORS} onChange={onPickCustom} />
   </div>
 );
 
 const FillPanel = ({
-  active, onPick,
-}: { active: string; onPick: (v: string) => void }) => (
+  active, onPick, onPickCustom,
+}: { active: string; onPick: (v: string) => void; onPickCustom: (v: string) => void }) => (
   <div className="flex gap-2 justify-center bg-atelier-surface border border-atelier-border rounded-2xl px-3 py-3 shadow-glass animate-fade-in">
     {FILL_COLORS.map(({ value, label }) => (
       <button
@@ -46,6 +84,7 @@ const FillPanel = ({
         }}
       />
     ))}
+    <MobileColorPicker currentColor={active} presets={FILL_COLORS} onChange={onPickCustom} />
   </div>
 );
 
@@ -133,10 +172,20 @@ export const MobilePropertiesPanel = () => {
     updateSelectedElements({ strokeColor: c });
     setOpenPanel(null);
   };
+  const onStrokeColorCustom = (c: string) => {
+    setActiveColor(c);
+    updateSelectedElements({ strokeColor: c });
+    // Don't close — user is still in the native color picker
+  };
   const onFillColor = (c: string) => {
     setActiveFillColor(c);
     updateSelectedElements({ fillColor: c });
     setOpenPanel(null);
+  };
+  const onFillColorCustom = (c: string) => {
+    setActiveFillColor(c);
+    updateSelectedElements({ fillColor: c });
+    // Don't close — user is still in the native color picker
   };
   const onWidth = (w: number) => {
     setActiveStrokeWidth(w);
@@ -155,8 +204,8 @@ export const MobilePropertiesPanel = () => {
       onPointerDown={(e) => e.stopPropagation()}
     >
       {/* Popup panels — appear above the bar */}
-      {openPanel === "stroke" && <StrokePanel active={strokeColor} onPick={onStrokeColor} />}
-      {openPanel === "fill" && <FillPanel active={fillColor} onPick={onFillColor} />}
+      {openPanel === "stroke" && <StrokePanel active={strokeColor} onPick={onStrokeColor} onPickCustom={onStrokeColorCustom} />}
+      {openPanel === "fill" && <FillPanel active={fillColor} onPick={onFillColor} onPickCustom={onFillColorCustom} />}
       {openPanel === "width" && <WidthPanel active={strokeWidth} onPick={onWidth} />}
       {openPanel === "style" && <StylePanel active={strokeStyle} onPick={onStyle} />}
 

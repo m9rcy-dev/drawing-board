@@ -14,6 +14,7 @@ import {
   SELECTION_PADDING, ARROW_ENDPOINT_HANDLE_RADIUS, ARROW_BEND_HANDLE_RADIUS,
 } from "@/utils/constants";
 import { seededRng, drawSloppySegment, drawSloppyEllipse } from "./sloppiness";
+import { strokeSmoothPath, thinPoints } from "./smoothPath";
 import { getArrowMidPoint } from "@/core/collision/arrowHandles";
 import { ALL_HANDLES, getResizeBox } from "@/core/collision/resizeHandles";
 
@@ -143,11 +144,8 @@ const drawArrow = (ctx: CanvasRenderingContext2D, el: ArrowElement, rng: () => n
 
 const drawFreehand = (ctx: CanvasRenderingContext2D, el: FreehandElement): void => {
   if (el.points.length < 2) return;
-  ctx.beginPath();
-  ctx.moveTo(el.points[0].x, el.points[0].y);
-  for (let i = 1; i < el.points.length; i++) {
-    ctx.lineTo(el.points[i].x, el.points[i].y);
-  }
+  const pts = thinPoints(el.points);
+  strokeSmoothPath(ctx, pts);
   ctx.stroke();
 };
 

@@ -373,9 +373,20 @@ Clamps vertically to stay within viewport.
 - PropertiesPanel: web-only inside `hidden md:block`
 - MobilePropertiesPanel + MobileToolbar: stacked in `md:hidden flex-col` wrapper
 
-## Next Task: Phase 2.1 — Freehand Smoothing
-- Implement Catmull-Rom spline smoothing in `drawElement.ts` for freehand paths
-- Add `src/core/renderer/smoothPath.ts` utility
+## Feature Update (2026-03-21) — Phase 2.1 Freehand Smoothing ✅
+
+### Catmull-Rom Spline Smoothing
+- `src/core/renderer/smoothPath.ts` — NEW
+  - `strokeSmoothPath(ctx, points, tension?)` — draws a smooth cubic Bézier spline through freehand point samples using Catmull-Rom → Bézier conversion. Duplicates first/last points so the curve always passes through endpoints. Falls back to `lineTo` for 2 points, no-op for <2 points.
+  - `thinPoints(points, minDist?)` — removes points closer than `minDist` (default 4px) from each other before smoothing; keeps first + last always. Reduces O(n) Bézier spans when pointer events fire faster than pixels move.
+  - `catmullToBezier(p0, p1, p2, p3, tension)` — converts one Catmull-Rom span to two cubic Bézier control points. Tension 0.5 = classic Catmull-Rom; closer to 1 = tighter / more polyline-like.
+- `src/core/renderer/drawElement.ts` — `drawFreehand` now calls `thinPoints` + `strokeSmoothPath` instead of raw `lineTo` loop
+- `src/core/renderer/smoothPath.test.ts` — 12 unit tests: empty / 1 / 2 / 3+ point edge cases, correct canvas calls, bezier span count, thinning logic
+- All tests pass, build clean, lint clean
+
+## Next Task: Phase 3 — Selection & Interaction Polish
+- Inspect `drawing-board-implementation-plan.md` for Phase 3 details
+- Candidate: keyboard nudge (arrow keys move selected elements by 1px / 10px with Shift)
 
 ---
 
