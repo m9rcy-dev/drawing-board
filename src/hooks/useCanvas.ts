@@ -44,6 +44,7 @@ export interface TextEditState {
   color: string;
   width?: number;
   initialContent?: string;
+  mode: "text" | "label";
 }
 
 export interface UseCanvasReturn {
@@ -291,6 +292,11 @@ export const useCanvas = (canvasRef: RefObject<HTMLCanvasElement | null>): UseCa
 
   const commitText = useCallback((text: string) => {
     if (!textEdit) return;
+    if (textEdit.mode === "label") {
+      updateElement(textEdit.elementId, { label: text } as Partial<WhiteboardElement>);
+      setTextEdit(null);
+      return;
+    }
     if (text.trim() === "") {
       deleteElements([textEdit.elementId]);
     } else {
@@ -307,24 +313,54 @@ export const useCanvas = (canvasRef: RefObject<HTMLCanvasElement | null>): UseCa
   }, [textEdit, updateElement, deleteElements]);
 
   const cancelText = useCallback(() => {
-    if (textEdit && !textEdit.initialContent) deleteElements([textEdit.elementId]);
+    if (textEdit && textEdit.mode === "text" && !textEdit.initialContent) {
+      deleteElements([textEdit.elementId]);
+    }
     setTextEdit(null);
   }, [textEdit, deleteElements]);
 
-  // ── Double click — re-edit text ───────────────────────────────────────────
+  // ── Double click — re-edit text or add shape label ────────────────────────
 
   const handleDoubleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!canvasRef.current || activeTool !== "select") return;
     const { elements } = useCanvasStore.getState();
     const point = clientToWorld(e.clientX, e.clientY, canvasRef.current, zoom, panOffset);
     const hit = findHitElement(elements, point);
-    if (!hit || hit.type !== "text") return;
-    const textEl = hit as TextElement;
+    if (!hit) return;
+
+    if (hit.type === "text") {
+      const textEl = hit as TextElement;
+      setTextEdit({
+        elementId: textEl.id, x: textEl.x, y: textEl.y,
+        fontSize: textEl.fontSize, color: textEl.strokeColor,
+        width: textEl.width > 60 ? textEl.width : undefined,
+        initialContent: textEl.content,
+        mode: "text",
+      });
+      return;
+    }
+
+    // Freehand elements don't support labels
+    if (hit.type === "freehand") return;
+
+    // Open label editor centered on the shape / at midpoint of line/arrow
+    const LABEL_FONT_SIZE = 13;
+    let lx: number, ly: number;
+    if (hit.type === "arrow" || hit.type === "line") {
+      lx = (hit.x + hit.x2) / 2;
+      ly = (hit.y + hit.y2) / 2;
+    } else {
+      lx = hit.x + hit.width / 2;
+      ly = hit.y + hit.height / 2;
+    }
     setTextEdit({
-      elementId: textEl.id, x: textEl.x, y: textEl.y,
-      fontSize: textEl.fontSize, color: textEl.strokeColor,
-      width: textEl.width > 60 ? textEl.width : undefined,
-      initialContent: textEl.content,
+      elementId: hit.id,
+      x: lx - 60 / zoom,
+      y: ly - LABEL_FONT_SIZE / zoom,
+      fontSize: LABEL_FONT_SIZE,
+      color: hit.strokeColor,
+      initialContent: hit.label ?? "",
+      mode: "label",
     });
   }, [activeTool, canvasRef, zoom, panOffset]);
 
@@ -404,7 +440,7 @@ export const useCanvas = (canvasRef: RefObject<HTMLCanvasElement | null>): UseCa
         strokeColor: activeColor, strokeWidth: activeStrokeWidth, opacity: activeOpacity,
       }) as TextElement;
       addElement(el);
-      setTextEdit({ elementId: el.id, x: el.x, y: el.y, fontSize: el.fontSize, color: el.strokeColor });
+      setTextEdit({ elementId: el.id, x: el.x, y: el.y, fontSize: el.fontSize, color: el.strokeColor, mode: "text" });
       return;
     }
 
@@ -523,7 +559,10 @@ export const useCanvas = (canvasRef: RefObject<HTMLCanvasElement | null>): UseCa
     if (mode.type === "drawing") {
       let el = mode.element;
       if (el.type === "freehand") el = computeFreehandBounds(el as FreehandElement);
-      if (isMeaningful(el)) addElement(el);
+      if (isMeaningful(el)) {
+        addElement(el);
+        useCanvasStore.getState().setTool("select");
+      }
     }
 
     if (mode.type === "marquee") {
@@ -546,7 +585,10 @@ export const useCanvas = (canvasRef: RefObject<HTMLCanvasElement | null>): UseCa
     if (mode.type === "drawing") {
       let el = mode.element;
       if (el.type === "freehand") el = computeFreehandBounds(el as FreehandElement);
-      if (isMeaningful(el)) addElement(el);
+      if (isMeaningful(el)) {
+        addElement(el);
+        useCanvasStore.getState().setTool("select");
+      }
     }
     setMode({ type: "idle" });
   }, [mode, addElement]);

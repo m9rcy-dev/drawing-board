@@ -7,17 +7,19 @@
 
 @theme {
   /* Colors — Atelier Dark design system */
-  --color-atelier-bg:           #0B0A14;
-  --color-atelier-surface:      #15141F;
-  --color-atelier-elevated:     #1D1C2A;
-  --color-atelier-canvas:       #FAF9F6;
-  --color-atelier-accent:       #06B6D4;
-  --color-atelier-accent-dim:   rgba(6, 182, 212, 0.15);
-  --color-atelier-accent-glow:  rgba(6, 182, 212, 0.35);
+  --color-atelier-bg:           #1B1B1B;
+  --color-atelier-surface:      #252525;
+  --color-atelier-elevated:     #303030;
+  --color-atelier-canvas:       #F0EFEB;
+  --color-atelier-accent:       #90E0EF;
+  --color-atelier-accent-dim:   #90e0ef26;
+  --color-atelier-accent-glow:  #90e0ef59;
   --color-atelier-amber:        #F59E0B;
-  --color-atelier-text:         #EAE8F5;
-  --color-atelier-muted:        #6B6884;
+  --color-atelier-text:         #F0EFEB;
+  --color-atelier-muted:        #909099;
   --color-atelier-subtle:       #2A2838;
+  --color-atelier-border:       #ffffff1a;
+  --color-atelier-overlay:      #ffffff0d;
 
   /* Font families */
   --font-display: var(--font-fraunces), Georgia, serif;
@@ -26,7 +28,7 @@
 
   /* Shadows */
   --shadow-glass:       0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
-  --shadow-tool-active: 0 0 0 2px rgba(6,182,212,0.6), 0 4px 16px rgba(6,182,212,0.25);
+  --shadow-tool-active: 0 0 0 2px rgba(144,224,239,0.6), 0 4px 16px rgba(144,224,239,0.25);
   --shadow-canvas:      inset 0 0 80px rgba(0,0,0,0.12);
 
   /* Animations — keyframes defined below */
@@ -49,8 +51,8 @@
 }
 
 @keyframes glow-pulse {
-  0%, 100% { box-shadow: 0 0 12px rgba(6,182,212,0.3); }
-  50%       { box-shadow: 0 0 24px rgba(6,182,212,0.6); }
+  0%, 100% { box-shadow: 0 0 12px rgba(144,224,239,0.3); }
+  50%       { box-shadow: 0 0 24px rgba(144,224,239,0.6); }
 }
 
 @keyframes grain {
@@ -66,18 +68,47 @@
   90%        { transform: translate(-0.5%, -1%); }
 }
 
+/* ─── Light mode overrides ───────────────────────────────────────────────── */
+html[data-theme="light"] {
+  --color-atelier-bg:       #F0EFEB;
+  --color-atelier-surface:  #FFFFFF;
+  --color-atelier-elevated: #F5F4F0;
+  --color-atelier-canvas:   #FFFFFF;
+  --color-atelier-accent:   #0891B2;
+  --color-atelier-accent-dim: #0891b226;
+  --color-atelier-accent-glow: #0891b259;
+  --color-atelier-text:     #1B1B1B;
+  --color-atelier-muted:    #6B7280;
+  --color-atelier-border:   #0000001a;
+  --color-atelier-overlay:  #0000000a;
+  --shadow-glass:           0 4px 24px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.8);
+  --shadow-tool-active:     0 0 0 2px rgba(8,145,178,0.6), 0 4px 16px rgba(8,145,178,0.25);
+  color-scheme: light;
+}
+
 /* ─── CSS Variables (for non-Tailwind usage, e.g. inline canvas styles) ──── */
 
 :root {
-  --bg:         #0B0A14;
-  --surface:    #15141F;
-  --elevated:   #1D1C2A;
-  --border:     rgba(255, 255, 255, 0.07);
-  --canvas-bg:  #FAF9F6;
-  --accent:     #06B6D4;
-  --accent-dim: rgba(6, 182, 212, 0.15);
-  --text:       #EAE8F5;
-  --muted:      #6B6884;
+  --bg:         #1B1B1B;
+  --surface:    #252525;
+  --elevated:   #303030;
+  --border:     rgba(255,255,255,0.10);
+  --canvas-bg:  #F0EFEB;
+  --accent:     #90E0EF;
+  --accent-dim: rgba(144, 224, 239, 0.15);
+  --text:       #F0EFEB;
+  --muted:      #909099;
+}
+html[data-theme="light"] {
+  --bg:         #F0EFEB;
+  --surface:    #FFFFFF;
+  --elevated:   #F5F4F0;
+  --border:     rgba(0,0,0,0.10);
+  --canvas-bg:  #FFFFFF;
+  --accent:     #0891B2;
+  --accent-dim: rgba(8, 145, 178, 0.15);
+  --text:       #1B1B1B;
+  --muted:      #6B7280;
 }
 
 /* ─── Base ───────────────────────────────────────────────────────────────── */
@@ -117,7 +148,7 @@ canvas {
 
 /* ─── Selection / Focus ──────────────────────────────────────────────────── */
 
-::selection { background: rgba(6, 182, 212, 0.3); }
+::selection { background: rgba(144, 224, 239, 0.35); }
 
 :focus-visible {
   outline: 2px solid var(--accent);

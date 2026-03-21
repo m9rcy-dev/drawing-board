@@ -36,8 +36,12 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${fraunces.variable} ${dmSans.variable} ${jetbrainsMono.variable}`}
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('drawboard-theme');document.documentElement.setAttribute('data-theme',t||'dark')}catch(e){}` }} />
+      </head>
       <body className="grain-overlay">{children}</body>
     </html>
   );

@@ -4,7 +4,49 @@ import { useCanvasStore } from "@/store/canvasStore";
 import {
   STROKE_COLORS, FILL_COLORS, STROKE_WIDTHS, STROKE_DASH,
 } from "@/utils/constants";
-import type { StrokeStyle, Sloppiness } from "@/types";
+import type { WhiteboardElement, StrokeStyle, Sloppiness, Point } from "@/types";
+
+// ─── Position Helpers ─────────────────────────────────────────────────────────
+
+const PANEL_W = 220;   // px — w-52 (208) + some breathing room
+const PANEL_H = 360;   // px — approximate max height
+const GAP = 12;
+const TOOLBAR_W = 68;  // approx web toolbar right edge
+
+const getWorldBounds = (el: WhiteboardElement) => {
+  if (el.type === "arrow" || el.type === "line") {
+    const x = Math.min(el.x, el.x2);
+    const y = Math.min(el.y, el.y2);
+    return { x, y, w: Math.abs(el.x2 - el.x), h: Math.abs(el.y2 - el.y) };
+  }
+  return { x: el.x, y: el.y, w: el.width, h: el.height };
+};
+
+const computePosition = (
+  el: WhiteboardElement, zoom: number, panOffset: Point
+): { left: number; top: number } => {
+  const b = getWorldBounds(el);
+  const screenLeft  = b.x * zoom + panOffset.x;
+  const screenRight = (b.x + b.w) * zoom + panOffset.x;
+  const screenTop   = b.y * zoom + panOffset.y;
+
+  const vw = window.innerWidth;
+  const vh = window.innerHeight - 57; // subtract header height
+
+  // Prefer right of element; fall back to left; last resort: near toolbar
+  let left: number;
+  if (screenRight + GAP + PANEL_W < vw - 8) {
+    left = screenRight + GAP;
+  } else if (screenLeft - GAP - PANEL_W > TOOLBAR_W) {
+    left = screenLeft - GAP - PANEL_W;
+  } else {
+    left = TOOLBAR_W + 8;
+  }
+
+  // Clamp vertically
+  const top = Math.min(Math.max(8, screenTop), vh - PANEL_H - 8);
+  return { left, top };
+};
 
 // ─── Section ──────────────────────────────────────────────────────────────────
 
@@ -81,6 +123,7 @@ const StrokeStyleBtn = ({
 }) => {
   const labels: Record<StrokeStyle, string> = { solid: "Solid", dashed: "Dashed", dotted: "Dotted" };
   const dash = STROKE_DASH[value] ?? [];
+  const lineColor = active ? "#90E0EF" : "#6B6884";
 
   return (
     <button
@@ -99,7 +142,7 @@ const StrokeStyleBtn = ({
       <svg width="28" height="6" viewBox="0 0 28 6">
         <line
           x1="0" y1="3" x2="28" y2="3"
-          stroke={active ? "#06B6D4" : "#6B6884"}
+          stroke={lineColor}
           strokeWidth="2" strokeLinecap="round"
           strokeDasharray={dash.join(" ")}
         />
@@ -111,45 +154,48 @@ const StrokeStyleBtn = ({
 // ─── Sloppiness Button ────────────────────────────────────────────────────────
 
 const SLOPPINESS_OPTIONS: { value: Sloppiness; label: string; path: string }[] = [
-  { value: 0, label: "Clean",   path: "M2,9 L28,9" },
-  { value: 1, label: "Sketch",  path: "M2,9 C7,6 13,12 20,7 S26,9 28,9" },
-  { value: 2, label: "Rough",   path: "M2,10 C6,5 11,14 16,8 C20,3 24,13 28,8" },
+  { value: 0, label: "Clean",  path: "M2,9 L28,9" },
+  { value: 1, label: "Sketch", path: "M2,9 C7,6 13,12 20,7 S26,9 28,9" },
+  { value: 2, label: "Rough",  path: "M2,10 C6,5 11,14 16,8 C20,3 24,13 28,8" },
 ];
 
 const SloppinessBtn = ({
   option, active, onClick,
 }: {
   option: typeof SLOPPINESS_OPTIONS[number]; active: boolean; onClick: () => void;
-}) => (
-  <button
-    onClick={onClick}
-    title={option.label}
-    aria-label={option.label}
-    aria-pressed={active}
-    className={`
-      flex-1 h-9 flex items-center justify-center rounded-xl border transition-all duration-150
-      ${active
-        ? "bg-atelier-accent/20 border-atelier-accent/50"
-        : "bg-white/[0.03] border-white/[0.07] hover:bg-white/[0.07]"
-      }
-    `}
-  >
-    <svg width="30" height="18" viewBox="0 0 30 18">
-      <path
-        d={option.path}
-        stroke={active ? "#06B6D4" : "#6B6884"}
-        strokeWidth="2" strokeLinecap="round"
-        fill="none"
-      />
-    </svg>
-  </button>
-);
+}) => {
+  const pathColor = active ? "#90E0EF" : "#6B6884";
+  return (
+    <button
+      onClick={onClick}
+      title={option.label}
+      aria-label={option.label}
+      aria-pressed={active}
+      className={`
+        flex-1 h-9 flex items-center justify-center rounded-xl border transition-all duration-150
+        ${active
+          ? "bg-atelier-accent/20 border-atelier-accent/50"
+          : "bg-white/[0.03] border-white/[0.07] hover:bg-white/[0.07]"
+        }
+      `}
+    >
+      <svg width="30" height="18" viewBox="0 0 30 18">
+        <path
+          d={option.path}
+          stroke={pathColor}
+          strokeWidth="2" strokeLinecap="round"
+          fill="none"
+        />
+      </svg>
+    </button>
+  );
+};
 
 // ─── Properties Panel ─────────────────────────────────────────────────────────
 
 export const PropertiesPanel = () => {
   const {
-    elements, selectedIds,
+    elements, selectedIds, zoom, panOffset,
     activeColor, activeFillColor, activeStrokeWidth, activeStrokeStyle, activeSloppiness,
     setActiveColor, setActiveFillColor, setActiveStrokeWidth, setActiveStrokeStyle, setActiveSloppiness,
     updateSelectedElements,
@@ -158,26 +204,30 @@ export const PropertiesPanel = () => {
   if (selectedIds.length === 0) return null;
 
   const firstEl = elements.find((el) => el.id === selectedIds[0]);
-  const strokeColor = firstEl?.strokeColor ?? activeColor;
-  const fillColor = firstEl?.fillColor ?? activeFillColor;
-  const strokeWidth = firstEl?.strokeWidth ?? activeStrokeWidth;
-  const strokeStyle = firstEl?.strokeStyle ?? activeStrokeStyle;
-  const sloppiness = (firstEl?.sloppiness ?? activeSloppiness) as Sloppiness;
+  if (!firstEl) return null;
+
+  const strokeColor = firstEl.strokeColor ?? activeColor;
+  const fillColor   = firstEl.fillColor ?? activeFillColor;
+  const strokeWidth = firstEl.strokeWidth ?? activeStrokeWidth;
+  const strokeStyle = firstEl.strokeStyle ?? activeStrokeStyle;
+  const sloppiness  = (firstEl.sloppiness ?? activeSloppiness) as Sloppiness;
 
   const onStrokeColor = (c: string) => { setActiveColor(c); updateSelectedElements({ strokeColor: c }); };
-  const onFillColor = (c: string) => { setActiveFillColor(c); updateSelectedElements({ fillColor: c }); };
+  const onFillColor   = (c: string) => { setActiveFillColor(c); updateSelectedElements({ fillColor: c }); };
   const onStrokeWidth = (w: number) => { setActiveStrokeWidth(w); updateSelectedElements({ strokeWidth: w }); };
   const onStrokeStyle = (s: StrokeStyle) => { setActiveStrokeStyle(s); updateSelectedElements({ strokeStyle: s }); };
-  const onSloppiness = (s: Sloppiness) => { setActiveSloppiness(s); updateSelectedElements({ sloppiness: s }); };
+  const onSloppiness  = (s: Sloppiness) => { setActiveSloppiness(s); updateSelectedElements({ sloppiness: s }); };
+
+  // Position panel adjacent to the selected element in screen space
+  const pos = computePosition(firstEl, zoom, panOffset);
 
   return (
     <div
-      className="
-        absolute top-3 left-3 z-20 w-52
+      style={{ left: pos.left, top: pos.top }}
+      className="absolute z-20 w-52
         bg-atelier-surface/90 backdrop-blur-2xl
-        border border-white/[0.08] rounded-2xl
-        shadow-glass p-4 animate-fade-in
-      "
+        border border-atelier-border rounded-2xl
+        shadow-glass p-4 animate-fade-in"
       onPointerDown={(e) => e.stopPropagation()}
     >
       <Section label="Stroke">

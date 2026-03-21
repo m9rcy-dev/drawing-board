@@ -57,6 +57,7 @@ export interface BaseElement {
   opacity: number;
   isSelected: boolean;
   createdAt: number;
+  label?: string;
 }
 
 // ─── Concrete Element Types ───────────────────────────────────────────────────

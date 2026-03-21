@@ -77,10 +77,10 @@ export class Renderer {
 
   private drawMarquee(rect: BoundingBox): void {
     this.ctx.save();
-    this.ctx.strokeStyle = "#06B6D4";
+    this.ctx.strokeStyle = "#90E0EF";
     this.ctx.lineWidth = 1;
     this.ctx.setLineDash([6, 4]);
-    this.ctx.fillStyle = "rgba(6,182,212,0.06)";
+    this.ctx.fillStyle = "rgba(144,224,239,0.06)";
     this.ctx.beginPath();
     this.ctx.rect(rect.x, rect.y, rect.width, rect.height);
     this.ctx.fill();

@@ -86,14 +86,14 @@ const TextOverlay = ({
         ...(edit.width ? { width: edit.width * zoom, maxWidth: edit.width * zoom } : {}),
         lineHeight: 1.4,
         background: "rgba(255,255,255,0.85)",
-        border: "2px solid #06B6D4",
+        border: "2px solid #90E0EF",
         borderRadius: 4,
         padding: "2px 6px",
         outline: "none",
         resize: "none",
         overflow: "hidden",
         zIndex: 30,
-        boxShadow: "0 2px 12px rgba(6,182,212,0.2)",
+        boxShadow: "0 2px 12px rgba(144,224,239,0.2)",
       }}
     />
   );
@@ -162,7 +162,8 @@ export const Canvas = () => {
     ?? (isPanning ? "grabbing" : (TOOL_CURSORS[activeTool] ?? "crosshair"));
 
   return (
-    <div className="absolute inset-0">
+    // Background matches canvas render color so there's no flash before the first RAF frame.
+    <div className="absolute inset-0" style={{ background: "var(--canvas-bg)" }}>
       <canvas
         ref={canvasRef}
         data-testid="whiteboard-canvas"

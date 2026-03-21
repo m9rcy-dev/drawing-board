@@ -1,4 +1,4 @@
-import type { WhiteboardElement, Point } from "@/types";
+import type { WhiteboardElement } from "@/types";
 import { Renderer } from "@/core/renderer/Renderer";
 import { EXPORT_PADDING, EXPORT_SCALE } from "./constants";
 
@@ -33,30 +33,22 @@ const getSceneBounds = (elements: WhiteboardElement[]) => {
 export const exportAsPNG = (elements: WhiteboardElement[]): void => {
   const bounds = getSceneBounds(elements);
   const scale = EXPORT_SCALE;
-
   const canvas = document.createElement("canvas");
   canvas.width = bounds.width * scale;
   canvas.height = bounds.height * scale;
-
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
-
   ctx.scale(scale, scale);
-
   const renderer = new Renderer(ctx);
-  const panOffset: Point = { x: -bounds.x, y: -bounds.y };
+  renderer.render(elements, null, { zoom: 1, panOffset: { x: -bounds.x, y: -bounds.y }, exportMode: true });
 
-  renderer.render(elements, null, { zoom: 1, panOffset, exportMode: true });
-
-  canvas.toBlob((blob) => {
-    if (!blob) return;
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `drawboard-${Date.now()}.png`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }, "image/png");
+  const dataUrl = canvas.toDataURL("image/png");
+  const a = document.createElement("a");
+  a.href = dataUrl;
+  a.download = `drawboard-${Date.now()}.png`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 };
 
 // ─── Copy to Clipboard ────────────────────────────────────────────────────────

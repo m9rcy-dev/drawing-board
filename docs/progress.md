@@ -272,6 +272,107 @@ Removed the duplicate `*, *::before, *::after { box-sizing; margin; padding }` b
 ### Also fixed
 - Swatch containers changed from `flex gap-1.5 flex-wrap` to `grid grid-cols-5 gap-1.5` for explicit 5-per-row layout
 
+## Feature Update (2026-03-21) — UI Redesign Pass
+
+### New Color Theme: Atelier Light/Dark
+- Dark mode: Eerie Black `#1B1B1B` bg, `#252525` surface, Soft Cyan `#90E0EF` accent
+- Light mode: White Picket Fence `#F0EFEB` bg, `#FFFFFF` surface, Deep Cyan `#0891B2` accent
+- Added theme-aware CSS variables: `--color-atelier-border`, `--color-atelier-overlay`
+- Updated `globals.css` `@theme {}` + `html[data-theme="light"]` overrides
+- All selection/handle colors updated: `#06B6D4` → `#90E0EF` in renderers + Canvas
+
+### Light/Dark Mode Toggle
+- `src/hooks/useTheme.ts` — NEW: localStorage persistence, `data-theme` attribute on `<html>`
+- Anti-FOUC inline script in `src/app/layout.tsx` reads localStorage before React hydration
+- Toggle button (Sun/Moon icon) added to header beside Export button
+
+### New Logo Component
+- `src/components/common/Logo.tsx` — NEW: Inline SVG from `docs/logo.svg`
+- Header: shows Logo + "DrawBoard" text on desktop, logo-only on mobile
+
+### Collapsible Desktop Toolbar (WebToolbar)
+- `src/components/toolbar/WebToolbar.tsx` — NEW: floating vertical sidebar, left side of canvas
+- Collapse/expand via PanelLeftClose/PanelLeftOpen icon button
+- Replaces old fixed sidebar in `page.tsx`
+
+### Excalidraw-style Mobile Toolbar (MobileToolbar)
+- `src/components/toolbar/MobileToolbar.tsx` — NEW: bottom sheet, 7 tool buttons
+- Combo buttons: Shapes (rect/diamond/ellipse), Strokes (freehand/line) — shows last-used icon
+- Sub-menu popup appears above toolbar for combo buttons
+- Eraser button: deletes currently selected elements
+- Undo/Redo floating above bottom-right corner
+- No keyboard shortcut labels (mobile-specific UX)
+
+### Auto-switch to Select After Drawing
+- `src/hooks/useCanvas.ts`: after `addElement(el)` when element is meaningful, calls `setTool("select")`
+- Applies in both `handlePointerUp` and `handlePointerLeave`
+
+### Mobile PNG Export Fix
+- `src/utils/export.ts`: replaced `canvas.toBlob()` + `URL.createObjectURL()` with
+  `canvas.toDataURL()` + `document.body.appendChild(a)` — reliable on iOS/Safari
+
+### Mobile Export Button
+- Header Export button shows icon-only on mobile, full "Export" label on desktop
+- Both trigger the same dropdown menu (Save as PNG / Copy to clipboard)
+
+## Bug Fix (2026-03-21) — Hydration, Canvas Flash, Mobile Layout, Properties Position
+
+### Hydration mismatch (root cause found)
+Anti-FOUC `<script>` in layout sets `data-theme` on `<html>` before React hydrates.
+React's VDOM has no knowledge of this attribute → hydration error.
+Fix: `suppressHydrationWarning` on `<html>` in `layout.tsx`.
+
+### Canvas background flash / "blocked by theme color"
+The HTML `<canvas>` element has no CSS background — transparent before first RAF frame renders.
+Behind it, the page background (`var(--bg)`) was visible: black in dark mode, cream in light.
+Fix: `style={{ background: 'var(--canvas-bg)' }}` on the canvas wrapper div in `Canvas.tsx`.
+
+### Mobile: properties panel blocking canvas + undo/redo clash
+- `MobilePropertiesPanel` was in the normal flex document flow → grew when popup opened → shrank canvas
+- Undo/redo at `absolute -top-14` overlapped `MobilePropertiesPanel`
+Fix:
+- Removed `MobilePropertiesPanel` from `page.tsx` outer flex column
+- Moved it INSIDE `MobileToolbar` as `absolute bottom-full` overlay → doesn't affect layout flow
+- Integrated undo/redo INTO the nav bar (right side with separator) → no overlap possible
+
+### Web: properties panel now appears adjacent to selected element
+Previously fixed at `left-[72px] top-3` (far from shapes on right side of canvas).
+Now: `computePosition()` converts the selected element's world-space bounds to screen coords
+and places the panel to the right of the element (falls back to left, then near toolbar if no room).
+Clamps vertically to stay within viewport.
+
+## Feature Update (2026-03-21) — Layout & Label Pass
+
+### Hydration fix (useTheme)
+- Replaced `useState` + `useEffect` (caused React hydration mismatch + lint error) with `useSyncExternalStore`
+- Server/hydration uses `getServerSnapshot()` = "dark"; after hydration switches to actual localStorage value
+- Theme changes dispatch a custom `theme-change` window event so all instances stay in sync
+
+### Header & toolbar heights = 57px
+- `Header.tsx`: `h-12` → `h-[57px]`
+- `MobileToolbar.tsx`: nav `py-1.5` → `h-[57px]` explicit height
+
+### Web: Properties panel no longer overlaps toolbar
+- Repositioned from `left-3` to `left-[72px]` (clears the ~60px wide floating WebToolbar)
+- Hidden on mobile via `hidden md:block` wrapper in `page.tsx`
+
+### Mobile: Compact collapsible properties panel
+- `src/components/properties/MobilePropertiesPanel.tsx` — NEW
+- Appears above mobile toolbar when elements are selected
+- Compact bar: Stroke color dot / Fill color square / Width icon / Style icon
+- Tapping each opens a popup panel above with full color/width/style options
+- Popups dismiss after selection
+
+### Double-click labels on shapes
+- `src/types/index.ts`: Added `label?: string` to `BaseElement`
+- `src/core/renderer/drawElement.ts`: `drawShapeLabel()` renders label centered inside shapes; on line/arrow at midpoint with white background pill
+- `src/hooks/useCanvas.ts`: Extended `TextEditState` with `mode: "text" | "label"`; `handleDoubleClick` now opens label editor on rect/diamond/ellipse/arrow/line; `commitText` branches on mode — label mode updates `label` field, never deletes the element on empty; `cancelText` only deletes for mode="text"
+- `TextOverlay` in `Canvas.tsx` is reused for labels — positioned at shape center approximation
+
+### page.tsx restructure
+- PropertiesPanel: web-only inside `hidden md:block`
+- MobilePropertiesPanel + MobileToolbar: stacked in `md:hidden flex-col` wrapper
+
 ## Next Task: Phase 2.1 — Freehand Smoothing
 - Implement Catmull-Rom spline smoothing in `drawElement.ts` for freehand paths
 - Add `src/core/renderer/smoothPath.ts` utility
@@ -282,18 +383,23 @@ Removed the duplicate `*, *::before, *::after { box-sizing; margin; padding }` b
 
 | Key | Action |
 |-----|--------|
-| `V` | Select tool |
-| `R` | Rectangle |
-| `E` | Ellipse |
-| `L` | Line |
-| `A` | Arrow |
-| `P` | Pencil/Freehand |
-| `T` | Text |
+| `H` | Pan tool |
+| `1` | Select tool |
+| `2` | Rectangle |
+| `3` | Diamond |
+| `4` | Ellipse |
+| `5` | Arrow |
+| `6` | Line |
+| `7` | Freehand |
+| `8` | Text |
 | `Ctrl+Z` | Undo |
-| `Ctrl+Shift+Z` | Redo |
+| `Ctrl+R` / `Ctrl+Y` | Redo |
+| `Ctrl+A` | Select all |
+| `Ctrl+Shift+Delete` | Clear canvas |
 | `Delete/Backspace` | Delete selected |
+| `Escape` | Deselect all |
 | `Scroll` | Zoom in/out |
-| `Alt+Drag` | Pan canvas |
+| `Space+Drag` | Pan canvas (any mode) |
 
 ---
 

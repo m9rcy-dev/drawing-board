@@ -193,7 +193,7 @@ const drawLineSelection = (ctx: CanvasRenderingContext2D, el: LineElement): void
   const zoom = ctx.getTransform().a || 1;
   ctx.save();
   ctx.globalAlpha = 1;
-  ctx.strokeStyle = "#06B6D4";
+  ctx.strokeStyle = "#90E0EF";
   ctx.lineWidth = 1.5 / zoom;
   ctx.setLineDash([5, 4]);
   ctx.strokeRect(x - pad, y - pad, w + pad * 2, h + pad * 2);
@@ -207,7 +207,7 @@ const drawSelectionBox = (ctx: CanvasRenderingContext2D, el: WhiteboardElement):
 
   ctx.save();
   ctx.globalAlpha = 1;
-  ctx.strokeStyle = "#06B6D4";
+  ctx.strokeStyle = "#90E0EF";
   ctx.lineWidth = 1.5 / zoom;
   ctx.setLineDash([5, 4]);
   ctx.strokeRect(x, y, w, h);
@@ -218,7 +218,7 @@ const drawSelectionBox = (ctx: CanvasRenderingContext2D, el: WhiteboardElement):
     const hy = y + h * fy;
     ctx.beginPath(); ctx.arc(hx, hy, 5, 0, Math.PI * 2);
     ctx.fillStyle = "#ffffff"; ctx.fill();
-    ctx.strokeStyle = "#06B6D4"; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.strokeStyle = "#90E0EF"; ctx.lineWidth = 1.5; ctx.stroke();
   }
   ctx.restore();
 };
@@ -232,13 +232,45 @@ const drawArrowHandles = (ctx: CanvasRenderingContext2D, el: ArrowElement): void
   for (const [hx, hy] of [[el.x, el.y], [el.x2, el.y2]] as [number, number][]) {
     ctx.beginPath(); ctx.arc(hx, hy, ARROW_ENDPOINT_HANDLE_RADIUS, 0, Math.PI * 2);
     ctx.fillStyle = "#ffffff"; ctx.fill();
-    ctx.strokeStyle = "#06B6D4"; ctx.lineWidth = 2; ctx.stroke();
+    ctx.strokeStyle = "#90E0EF"; ctx.lineWidth = 2; ctx.stroke();
   }
 
   ctx.beginPath(); ctx.arc(mid.x, mid.y, ARROW_BEND_HANDLE_RADIUS, 0, Math.PI * 2);
-  ctx.fillStyle = "#06B6D4"; ctx.fill();
+  ctx.fillStyle = "#90E0EF"; ctx.fill();
   ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1.5; ctx.stroke();
 
+  ctx.restore();
+};
+
+// ─── Shape Label ──────────────────────────────────────────────────────────────
+
+const LABEL_FONT = '13px "DM Sans", system-ui, sans-serif';
+
+const drawShapeLabel = (ctx: CanvasRenderingContext2D, el: WhiteboardElement): void => {
+  if (!el.label) return;
+  ctx.save();
+  ctx.setLineDash([]);
+  ctx.globalAlpha = el.opacity;
+  ctx.font = LABEL_FONT;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  let lx: number, ly: number;
+  if (el.type === "arrow" || el.type === "line") {
+    lx = (el.x + el.x2) / 2;
+    ly = (el.y + el.y2) / 2;
+    // Background pill so label is readable over the line
+    const metrics = ctx.measureText(el.label);
+    const pw = metrics.width + 12;
+    ctx.fillStyle = "rgba(240,239,235,0.92)";
+    ctx.fillRect(lx - pw / 2, ly - 10, pw, 20);
+  } else {
+    lx = el.x + el.width / 2;
+    ly = el.y + el.height / 2;
+  }
+
+  ctx.fillStyle = el.strokeColor;
+  ctx.fillText(el.label, lx, ly);
   ctx.restore();
 };
 
@@ -260,6 +292,9 @@ export const drawElement = (ctx: CanvasRenderingContext2D, el: WhiteboardElement
   }
 
   ctx.restore();
+
+  // Draw inline label for non-text, non-freehand elements
+  if (el.type !== "text" && el.type !== "freehand") drawShapeLabel(ctx, el);
 
   if (el.isSelected) {
     if (el.type === "arrow") drawArrowHandles(ctx, el);

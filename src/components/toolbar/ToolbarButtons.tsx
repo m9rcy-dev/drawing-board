@@ -45,9 +45,9 @@ interface DividerProps {
 
 const Divider = ({ orientation }: DividerProps) =>
   orientation === "horizontal" ? (
-    <div className="w-full h-px bg-white/[0.06] my-1" />
+    <div className="w-full h-px bg-atelier-border my-1" />
   ) : (
-    <div className="h-full w-px bg-white/[0.06] mx-1 self-stretch" />
+    <div className="h-full w-px bg-atelier-border mx-1 self-stretch" />
   );
 
 // ─── Component ────────────────────────────────────────────────────────────────
