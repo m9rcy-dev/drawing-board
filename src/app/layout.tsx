@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Fraunces, DM_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -26,6 +26,15 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Drawboard — Simple Whiteboard",
   description: "A lightweight, beautiful whiteboard for ideas",
+};
+
+// Prevent the browser from pinch-zooming the page.
+// Canvas zoom is handled entirely in JS via wheel/pointer events.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({

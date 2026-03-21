@@ -60,7 +60,6 @@ export interface UseCanvasReturn {
     onPointerMove: (e: React.PointerEvent<HTMLCanvasElement>) => void;
     onPointerUp: () => void;
     onPointerLeave: () => void;
-    onWheel: (e: React.WheelEvent<HTMLCanvasElement>) => void;
     onDoubleClick: (e: React.MouseEvent<HTMLCanvasElement>) => void;
   };
 }
@@ -273,7 +272,7 @@ export const useCanvas = (canvasRef: RefObject<HTMLCanvasElement | null>): UseCa
   const {
     activeTool, zoom, panOffset,
     addElement, updateElement, deleteElements,
-    selectElements, clearSelection, setZoom, setPanOffset,
+    selectElements, clearSelection, setPanOffset,
     activeColor, activeFillColor, activeStrokeWidth, activeStrokeStyle, activeSloppiness, activeOpacity,
   } = store;
 
@@ -593,22 +592,36 @@ export const useCanvas = (canvasRef: RefObject<HTMLCanvasElement | null>): UseCa
     setMode({ type: "idle" });
   }, [mode, addElement]);
 
-  // ── Wheel (zoom) ─────────────────────────────────────────────────────────
+  // ── Wheel (zoom) — native listener with { passive: false } ───────────────
+  // React attaches onWheel as a passive listener since React 17, which makes
+  // e.preventDefault() a no-op (and logs a console warning on pinch-to-zoom).
+  // Attaching directly to the DOM with { passive: false } lets us preventDefault
+  // reliably, keeping browser zoom from firing when the user scrolls the canvas.
+  // zoom/panOffset are read from the store on every event to avoid stale closures.
 
-  const handleWheel = useCallback((e: React.WheelEvent<HTMLCanvasElement>) => {
-    e.preventDefault();
-    const factor = e.deltaY < 0 ? 1.08 : 0.92;
-    const newZoom = Math.min(20, Math.max(0.1, zoom * factor));
-    if (!canvasRef.current) return;
-    const r = canvasRef.current.getBoundingClientRect();
-    const mx = e.clientX - r.left;
-    const my = e.clientY - r.top;
-    setZoom(newZoom);
-    setPanOffset({
-      x: mx - (mx - panOffset.x) * (newZoom / zoom),
-      y: my - (my - panOffset.y) * (newZoom / zoom),
-    });
-  }, [zoom, panOffset, setZoom, setPanOffset, canvasRef]);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const handler = (e: WheelEvent) => {
+      e.preventDefault();
+      const { zoom: z, panOffset: pan, setZoom: sz, setPanOffset: sp } =
+        useCanvasStore.getState();
+      const factor = e.deltaY < 0 ? 1.08 : 0.92;
+      const newZoom = Math.min(20, Math.max(0.1, z * factor));
+      const r = canvas.getBoundingClientRect();
+      const mx = e.clientX - r.left;
+      const my = e.clientY - r.top;
+      sz(newZoom);
+      sp({
+        x: mx - (mx - pan.x) * (newZoom / z),
+        y: my - (my - pan.y) * (newZoom / z),
+      });
+    };
+
+    canvas.addEventListener("wheel", handler, { passive: false });
+    return () => canvas.removeEventListener("wheel", handler);
+  }, [canvasRef]);
 
   // ── Derived state ─────────────────────────────────────────────────────────
 
@@ -631,7 +644,6 @@ export const useCanvas = (canvasRef: RefObject<HTMLCanvasElement | null>): UseCa
       onPointerMove: handlePointerMove,
       onPointerUp: handlePointerUp,
       onPointerLeave: handlePointerLeave,
-      onWheel: handleWheel,
       onDoubleClick: handleDoubleClick,
     },
   };

@@ -6,9 +6,11 @@ import { PropertiesPanel } from "@/components/properties/PropertiesPanel";
 import { WebToolbar } from "@/components/toolbar/WebToolbar";
 import { MobileToolbar } from "@/components/toolbar/MobileToolbar";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { usePreventBrowserZoom } from "@/hooks/usePreventBrowserZoom";
 
 export default function DrawingBoardPage() {
   useKeyboardShortcuts();
+  usePreventBrowserZoom();
 
   return (
     <div className="flex flex-col h-[100dvh] bg-atelier-bg overflow-hidden animate-fade-in">
